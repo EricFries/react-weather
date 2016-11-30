@@ -1,8 +1,14 @@
 var React = require('react');
 var Search = require('../components/Search');
+var ForecastWrapper= require('../components/ForecastWrapper');
+var Forecast = require('../components/Forecast');
 var openWeatherHelpers = require('../utils/openWeatherHelpers');
 
 var ForecastContainer = React.createClass({
+
+  contextTypes: {
+    router: React.PropTypes.object.isRequired,
+  },
 
   getInitialState: function (){
     return {
@@ -14,24 +20,48 @@ var ForecastContainer = React.createClass({
 
   componentDidMount: function() {
     var searchTerm = this.props.routeParams.city;
-    console.log(searchTerm);
+
     openWeatherHelpers.getFiveDayForecast(searchTerm)
     .then(function(response){
-      console.log(response);
       this.setState({
         isLoading: false,
         fiveDayForecast: response.data.list,
-        city: response.data.city,
+        city: response.data.city.name,
       });
     }.bind(this))
   },
 
+  handleClickForecast: function (forecast) {
+    this.context.router.push({
+      pathname: '/detail/' + this.state.city,
+      query: {
+        date: forecast.dt,
+        detailForecast: JSON.stringify(forecast.temp),
+        description: forecast.weather[0].description,
+      }
+    });
+  },
+
+  renderForecasts: function() {
+    return this.state.fiveDayForecast.map(function(forecast, index){
+      return <Forecast
+              forecast={forecast}
+              date={forecast.dt}
+              description={forecast.weather[0].description}
+              key={index}
+              onClickForecast={this.handleClickForecast}
+              className="col-md-3"
+            />
+    }, this);
+  },
+
   render: function() {
-    console.log(this.state.fiveDayForecast);
     return (
       this.state.isLoading === true
       ? <p>Loading</p>
-      : <p>Display Forcast</p>
+      : <ForecastWrapper>
+        {this.renderForecasts()}
+        </ForecastWrapper>
     )
   },
 });
